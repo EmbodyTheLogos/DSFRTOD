@@ -6,6 +6,8 @@ import threading
 HEADERSIZE = 10
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # AF_INET : IPv4 and SOCKET_STREAM : TCP
+display_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
 
 previous_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # AF_INET : IPv4 and SOCKET_STREAM : TCP
 previous_client.bind((socket.gethostbyname(socket.gethostname()), 1999))
@@ -80,7 +82,6 @@ def update_order(order):
             else:
                 break
 
-
     print("Order of clients updated")
 
 
@@ -97,12 +98,14 @@ def main():
 
     # Connect to server
     global server
+    global display_server
     server_address = str(input("Enter server's ip adress: "))
-    server_port = int(input("Enter server's port number: "))
     while True:
         try:
             print("connecting to server")
-            server.connect((server_address, server_port))
+            server.connect((server_address, 2999)) #receving image port
+            display_server.connect((server_address, 3999)) #sending image port
+
         except ConnectionRefusedError:
             # Keep trying to connect to server
             pass
@@ -112,14 +115,10 @@ def main():
     full_msg = b''
     new_msg = True
 
-
     while True:
-
         try:
             # Receive and process data from server
             msg = server.recv(32 * 1024)  # receive data. 32 * 1024 bytes at a time
-
-
             if new_msg:
                 header = msg[:HEADERSIZE].decode()
                 msglen = int(header)
@@ -127,7 +126,6 @@ def main():
 
             # receive incoming image
             full_msg += msg
-
 
             # Process fullly received message
             if len(full_msg) - HEADERSIZE == msglen:
@@ -141,7 +139,10 @@ def main():
                     update_order(decoded_data)
                 else:
                     # the message is an image
-                    cv.imshow("hi", decoded_data)
+                    #cv.imshow("hi", decoded_data)
+
+                    processed_image = pickle.dumps(decoded_data)
+                    display_server.send(f'{len(processed_image):<{HEADERSIZE}}'.encode() + processed_image)
 
                     # ready to receive new mesaage from server
                 new_msg = True

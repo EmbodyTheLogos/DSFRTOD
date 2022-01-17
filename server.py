@@ -9,7 +9,9 @@ import threading
 
 HEADERSIZE = 10
 need_to_update = False
+new_client_connected = False
 clients = []
+clients_display = []
 num_of_clients = 1 #int(input("Enter the number of machines: "))
 
 # socket tutorial: https://www.youtube.com/watch?v=Lbfe3-v7yE0
@@ -19,7 +21,58 @@ s.bind((host, 2999))
 print("Server's Address:", host, 2999)
 s.listen(5)
 
+# Display socket: purpose is to receive processed images from clients
+display_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+display_socket.bind((host, 3999))
+display_socket.listen(5)
+
 success_msg = [] # need this to avoid receiving interleaving of packages from different images. Took me a long time to know what is wrong with my code...
+
+def display_processed_images():
+    while True:
+        for i in range(len(clients_display)):
+
+            try:
+                msglen = 0
+                full_msg = b''
+                new_msg = True
+                receive_msg_size = 32 * 1024
+                while True:
+                    # Receive and process data from server
+                    msg = clients_display[i][0].recv(receive_msg_size)  # receive data. 32 * 1024 bytes at a time
+                    if new_msg:
+                        if receive_msg_size == 0:
+                            break
+                        header = msg[:HEADERSIZE].decode()
+                        msglen = int(header)
+
+                        new_msg = False
+
+                    # receive incoming image
+                    full_msg += msg
+                    #ensure receiving full message
+                    if msglen - len(full_msg) + HEADERSIZE < 1024:
+                        receive_msg_size = msglen - len(full_msg) + HEADERSIZE
+                        print(receive_msg_size)
+
+                    # Process fullly received message
+                    if len(full_msg) - HEADERSIZE == msglen:
+
+                        # check what type of message this is
+                        processed_image = pickle.loads(full_msg[HEADERSIZE:])
+                        cv.imshow("DSFRTOD", processed_image)
+
+                        # ready to receive new image from other client
+                        new_msg = True
+                        full_msg = b''
+
+                        # Exiting program
+                        key = cv.waitKey(1) & 0xFF
+                        if key == ord('q'):
+                            break
+            except OSError:
+                break
+
 
 
 def update_order():
@@ -50,6 +103,7 @@ def update_order():
         except (ConnectionResetError, ConnectionAbortedError):
             print("Order: A client got disconnected. It is the " + str(i) + " th client")
             del clients[i]
+            del clients_display[i]
             del success_msg[i]
             break
     print("Update sent to all clients")
@@ -79,6 +133,7 @@ def handle_all_clients():
             except (ConnectionResetError, ConnectionAbortedError):
                 print("A client got disconnected. It is the " + str(i) + " th client")
                 del clients[i]
+                del clients_display[i]
                 del success_msg[i]
                 update_order()
                 break
@@ -89,7 +144,10 @@ def accept_new_connections():
 
     while True:
         clientsocket, address = s.accept()  # address is a tuple ("IP", port)
+        client_display_socket, client_display_address = display_socket.accept()
         success_msg.append("Done")
+
+        clients_display.append((client_display_socket, client_display_address))
         clients.append((clientsocket, address))
         print("A client "+ str(address) + "connected"  )
         need_to_update = True
@@ -99,8 +157,10 @@ def accept_connection():
     global success_msg
     global need_to_update
     clientsocket, address = s.accept() #address is a tuple ("IP", port)
+    client_display_socket, client_display_address = display_socket.accept()  # address is a tuple ("IP", port)
     success_msg.append("Done")
     clients.append((clientsocket, address))
+    clients_display.append((client_display_socket, client_display_address))
     print("A client connected")
     need_to_update = True
 
@@ -113,6 +173,7 @@ def main():
 
     threading.Thread(target=handle_all_clients).start()
     threading.Thread(target=accept_new_connections).start()
+    threading.Thread(target=display_processed_images).start()
 
 
 
