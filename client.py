@@ -20,7 +20,6 @@ def accept_connection():
     global previous_client
     global previous_client_socket
     global previous_client_connected
-    print("Extra thread???")
     while True:
         try:
             previous_client_socket = previous_client.accept()
@@ -36,10 +35,6 @@ def accept_connection():
 def update_order(order):
     global server
     global next_client
-    print("You stuck here?")
-
-
-
     next_client.close()
     # reset next_client socket
     next_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -102,10 +97,12 @@ def main():
 
     # Connect to server
     global server
+    server_address = str(input("Enter server's ip adress: "))
+    server_port = int(input("Enter server's port number: "))
     while True:
         try:
             print("connecting to server")
-            server.connect(("192.168.1.126", 2999))
+            server.connect((server_address, server_port))
         except ConnectionRefusedError:
             # Keep trying to connect to server
             pass
