@@ -5,6 +5,15 @@ import pickle
 import imutils
 import threading
 
+
+"""
+Server has three 3 Threads: (1) Accept connection
+                            (2) Send information to clients
+                            (3) Received processed information from clients
+                            Thread (1) and (2) handle update (when there is a new connection or a client disconnect)
+"""
+
+
 #TODO: two problems. One is the interleaving messages and the other is client pause to wait for previous client to connect. Also not update to all clients
 
 HEADERSIZE = 10
@@ -28,10 +37,11 @@ display_socket.listen(5)
 
 success_msg = [] # need this to avoid receiving interleaving of packages from different images. Took me a long time to know what is wrong with my code...
 
+
+# This is for displaying thread
 def display_processed_images():
     while True:
         for i in range(len(clients_display)):
-
             try:
                 msglen = 0
                 full_msg = b''
@@ -39,6 +49,7 @@ def display_processed_images():
                 receive_msg_size = 32 * 1024
                 while True:
                     # Receive and process data from server
+
                     msg = clients_display[i][0].recv(receive_msg_size)  # receive data. 32 * 1024 bytes at a time
                     if new_msg:
                         if receive_msg_size == 0:
@@ -51,9 +62,8 @@ def display_processed_images():
                     # receive incoming image
                     full_msg += msg
                     #ensure receiving full message
-                    if msglen - len(full_msg) + HEADERSIZE < 1024:
+                    if msglen - len(full_msg) + HEADERSIZE < receive_msg_size:
                         receive_msg_size = msglen - len(full_msg) + HEADERSIZE
-                        print(receive_msg_size)
 
                     # Process fullly received message
                     if len(full_msg) - HEADERSIZE == msglen:
@@ -72,7 +82,6 @@ def display_processed_images():
                             break
             except OSError:
                 break
-
 
 
 def update_order():
@@ -94,7 +103,7 @@ def update_order():
             # success_msg[] prevent interleaving in packages
 
             if success_msg[i] == "Done":
-                clients[i][0].send(f'{len(order):<{HEADERSIZE}}'.encode() + order)  # send information to the client.
+                clients[i][0].sendall(f'{len(order):<{HEADERSIZE}}'.encode() + order)  # send information to the client.
                 success_msg[i] = ''
 
             success_msg[i] = clients[i][0].recv(16)
@@ -109,6 +118,7 @@ def update_order():
     print("Update sent to all clients")
 
 
+# This is for sending thread
 def handle_all_clients():
     global success_msg
     global need_to_update
@@ -124,7 +134,7 @@ def handle_all_clients():
                     frame = imutils.resize(frame, width=320)
                     image = pickle.dumps(frame)  # encode image using pickle
                     image = f'{len(image):<{HEADERSIZE}}'.encode() + image
-                    clients[i][0].send(image)  # send information to the client.
+                    clients[i][0].sendall(image)  # send information to the client.
                     success_msg[i] = ''
                 success_msg[i] = clients[i][0].recv(4)
                 success_msg[i] = success_msg[i].decode("utf-8")

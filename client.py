@@ -130,7 +130,7 @@ def main():
             # Process fullly received message
             if len(full_msg) - HEADERSIZE == msglen:
                 # inform server that the image has been received
-                server.send("Done".encode())
+                server.sendall("Done".encode())
 
                 # check what type of message this is
                 decoded_data = pickle.loads(full_msg[HEADERSIZE:])
@@ -142,7 +142,7 @@ def main():
                     #cv.imshow("hi", decoded_data)
 
                     processed_image = pickle.dumps(decoded_data)
-                    display_server.send(f'{len(processed_image):<{HEADERSIZE}}'.encode() + processed_image)
+                    display_server.sendall(f'{len(processed_image):<{HEADERSIZE}}'.encode() + processed_image)
 
                     # ready to receive new mesaage from server
                 new_msg = True
@@ -164,7 +164,7 @@ def main():
         # Handle when previous client disconnect
         try:
             if previous_client_connected:
-                previous_client_socket[0].send("Hi".encode())
+                previous_client_socket[0].sendall("Hi".encode())
         except (ConnectionResetError, ConnectionAbortedError):
             print("previous client disconnected")
             previous_client_socket = ()
