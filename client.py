@@ -14,6 +14,7 @@ HEADERSIZE = 10
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # AF_INET : IPv4 and SOCKET_STREAM : TCP
 display_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+
 def update_order(order):
     global server
 
@@ -28,7 +29,6 @@ def update_order(order):
 
 # socket tutorial: https://www.youtube.com/watch?v=Lbfe3-v7yE0
 def main():
-
     # Connect to server
     global server
     global display_server
@@ -36,8 +36,8 @@ def main():
     while True:
         try:
             print("connecting to server")
-            server.connect((server_address, 2999)) #receving image port
-            display_server.connect((server_address, 3999)) #sending image port
+            server.connect((server_address, 2999))  # receving image port
+            display_server.connect((server_address, 3999))  # sending image port
 
         except ConnectionRefusedError:
             # Keep trying to connect to server
@@ -72,7 +72,7 @@ def main():
                     update_order(decoded_data)
                 else:
                     # the message is an image
-                    #cv.imshow("hi", decoded_data)
+                    # cv.imshow("hi", decoded_data)
 
                     processed_image = pickle.dumps(decoded_data)
                     display_server.sendall(f'{len(processed_image):<{HEADERSIZE}}'.encode() + processed_image)
@@ -80,7 +80,6 @@ def main():
                     # ready to receive new mesaage from server
                 new_msg = True
                 full_msg = b''
-
 
                 # Exiting program
                 key = cv.waitKey(1) & 0xFF
