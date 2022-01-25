@@ -48,15 +48,14 @@ def display_processed_images():
                 new_msg = True
                 receive_msg_size = 32 * 1024
                 while True:
-                    # Receive and process data from server
 
+                    # Receive and process data from server
                     msg = clients_display[i][0].recv(receive_msg_size)  # receive data. 32 * 1024 bytes at a time
                     if new_msg:
                         if receive_msg_size == 0:
                             break
                         header = msg[:HEADERSIZE].decode()
                         msglen = int(header)
-
                         new_msg = False
 
                     # receive incoming image
@@ -80,7 +79,26 @@ def display_processed_images():
                         key = cv.waitKey(1) & 0xFF
                         if key == ord('q'):
                             break
-            except OSError:
+            except (ConnectionResetError, ConnectionAbortedError, ValueError):
+                """
+                ValueError:  msglen = int(header)
+                            
+                            The cause:  recv method in "msg = clients_display[i][0].recv(receive_msg_size)"
+                
+                                        "[regarding recv method] The other side has shut down the socket. You'll get 0 bytes of data.
+                                        0 means you will never get more data on that socket.
+                                        But if you keep asking for data, you'll keep getting 0 bytes."
+                                        (https://stackoverflow.com/questions/41382127/how-does-the-python-socket-recv-method-know-that-the-end-of-the-message-has-be)
+                                        
+                                        In our code, this happen when a client got disconnected, but the server could not detect it
+                                        because it is receiving messages from other clients. This means that the
+                                        disconnected client has not been removed from our clients_display list.
+                                        So when it traverse through the list and try to receive message from the disconnected client,
+                                        it noticed that the socket has been closed by that client, thus receives 0 bytes (i.e. empty message).
+                                        
+                """
+                print("A display client disconnected")
+                del clients_display[i]
                 break
 
 
@@ -112,7 +130,6 @@ def update_order():
         except (ConnectionResetError, ConnectionAbortedError):
             print("Order: A client got disconnected. It is the " + str(i) + " th client")
             del clients[i]
-            del clients_display[i]
             del success_msg[i]
             break
     print("Update sent to all clients")
@@ -143,7 +160,6 @@ def handle_all_clients():
             except (ConnectionResetError, ConnectionAbortedError):
                 print("A client got disconnected. It is the " + str(i) + " th client")
                 del clients[i]
-                del clients_display[i]
                 del success_msg[i]
                 update_order()
                 break
