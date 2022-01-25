@@ -85,13 +85,9 @@ def main():
                 # Exiting program
                 key = cv.waitKey(1) & 0xFF
                 if key == ord('q'):
-                    # this will raise an OSError, thus terminate any threads that still wait for previous_client.accept()
-                    previous_client.close()
                     break
         except (ConnectionResetError, ConnectionAbortedError):
             print("Disconnected from server")
-            # this will raise an OSError, thus terminate any threads that still wait for previous_client.accept()
-            previous_client.close()
             break
 
     cv.destroyAllWindows()  # destroys the window showing image
