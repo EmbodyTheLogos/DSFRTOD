@@ -1,6 +1,7 @@
 import socket
 import pickle
 import cv2 as cv
+import time
 import threading
 
 """
@@ -75,6 +76,7 @@ def main():
                     # cv.imshow("hi", decoded_data)
 
                     processed_image = pickle.dumps(decoded_data)
+                    #time.sleep(0.3)
                     display_server.sendall(f'{len(processed_image):<{HEADERSIZE}}'.encode() + processed_image)
 
                     # ready to receive new mesaage from server

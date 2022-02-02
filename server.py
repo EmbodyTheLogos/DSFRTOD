@@ -1,10 +1,8 @@
-
 import cv2 as cv
 import socket
 import pickle
 import imutils
 import threading
-
 
 """
 Server has three 3 Threads: (1) Accept connection
@@ -13,15 +11,14 @@ Server has three 3 Threads: (1) Accept connection
                             Thread (1) and (2) handle update (when there is a new connection or a client disconnect)
 """
 
-
-#TODO: two problems. One is the interleaving messages and the other is client pause to wait for previous client to connect. Also not update to all clients
+# TODO: two problems. One is the interleaving messages and the other is client pause to wait for previous client to connect. Also not update to all clients
 
 HEADERSIZE = 10
 need_to_update = False
 new_client_connected = False
 clients = []
 clients_display = []
-num_of_clients = 1 #int(input("Enter the number of machines: "))
+num_of_clients = 1  # int(input("Enter the number of machines: "))
 
 # socket tutorial: https://www.youtube.com/watch?v=Lbfe3-v7yE0
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # "AF_INET : IPv4" and "SOCKET_STREAM : TCP"
@@ -30,16 +27,28 @@ s.bind((host, 2999))
 print("Server's Address:", host, 2999)
 s.listen(5)
 
-# Display socket: purpose is to receive processed images from clients
+# Display socket: the purpose of this socket is to receive processed images from clients
 display_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 display_socket.bind((host, 3999))
 display_socket.listen(5)
 
-success_msg = [] # need this to avoid receiving interleaving of packages from different images. Took me a long time to know what is wrong with my code...
+success_msg = []  # need this to avoid receiving interleaving of packages from different images. Took me a long time to know what is wrong with my code...
 
 
 # This is for displaying thread
 def display_processed_images():
+
+    """ Algorithm for handling receive processed data from clients
+    For every clients in a circular order (*) :
+    1. Server sends "ready" message to a client, informing that it is ready to receive the processed data.
+    2. When the client receive the "ready" message from server, it sends the processed data to the server.
+    3. Server received the processed data from the client.
+    4. Repeat step 1 to 3 with the next client.
+
+    (*) The order of clients follows the indexing of clients_display[] list
+            (i.e. clients_display[0] is the first client, clients_display[1] is the second client, ...)
+            Treat the list as a circular list.
+    """
     while True:
         for i in range(len(clients_display)):
             try:
@@ -60,7 +69,7 @@ def display_processed_images():
 
                     # receive incoming image
                     full_msg += msg
-                    #ensure receiving full message
+                    # ensure receiving full message
                     if msglen - len(full_msg) + HEADERSIZE < receive_msg_size:
                         receive_msg_size = msglen - len(full_msg) + HEADERSIZE
 
@@ -106,8 +115,8 @@ def update_order():
     global success_msg
     clients_ip = []
     for i in range(len(clients)):
-        clients_ip.append(clients[i][1][0]) #we only need to send the address, not the port
-        #reset success_msg[]
+        clients_ip.append(clients[i][1][0])  # we only need to send the address, not the port
+        # reset success_msg[]
         success_msg[i] = "Done"
 
     for i in range(len(clients)):
@@ -164,6 +173,7 @@ def handle_all_clients():
                 update_order()
                 break
 
+
 def accept_new_connections():
     global success_msg
     global need_to_update
@@ -175,20 +185,21 @@ def accept_new_connections():
 
         clients_display.append((client_display_socket, client_display_address))
         clients.append((clientsocket, address))
-        print("A client "+ str(address) + "connected"  )
+        print("A client " + str(address) + "connected")
         need_to_update = True
 
 
 def accept_connection():
     global success_msg
     global need_to_update
-    clientsocket, address = s.accept() #address is a tuple ("IP", port)
+    clientsocket, address = s.accept()  # address is a tuple ("IP", port)
     client_display_socket, client_display_address = display_socket.accept()  # address is a tuple ("IP", port)
     success_msg.append("Done")
     clients.append((clientsocket, address))
     clients_display.append((client_display_socket, client_display_address))
     print("A client connected")
     need_to_update = True
+
 
 def main():
     # wait for all clients to connect
@@ -202,8 +213,5 @@ def main():
     threading.Thread(target=display_processed_images).start()
 
 
-
 if __name__ == '__main__':
     main()
-
-
