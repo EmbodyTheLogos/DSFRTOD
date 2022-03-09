@@ -7,6 +7,7 @@ from threading import Thread
 import time
 import gc  # garbage collector
 from collections import deque
+import lz4.frame
 
 HEADERSIZE = 10
 
@@ -44,7 +45,7 @@ def receive_raw_image():
     global input_server
     global raw_images
     global HEADERSIZE
-    full_msg = b''
+    full_msg = bytearray()
     new_msg = True
     receive_msg_size = HEADERSIZE
     header = ''
@@ -52,7 +53,7 @@ def receive_raw_image():
         #time.sleep(0.1)
         try:
             msg = input_server.recv(receive_msg_size)
-            full_msg += msg
+            full_msg.extend(msg)
             if new_msg:
                 #make sure to receive full header before convert it to int (sometimes, only part of the header is received)
                 header += msg.decode()
@@ -72,15 +73,20 @@ def receive_raw_image():
                 if len(full_msg) - HEADERSIZE == msglen:
                     receive_msg_size = HEADERSIZE
                     # check what type of message this is
-                    decoded_data = pickle.loads(full_msg[HEADERSIZE:])
+
+                    decoded_data = lz4.frame.decompress(full_msg[HEADERSIZE:])
+                    #decoded_data = lz4.frame.decompress(decoded_data)
+                    decoded_data = pickle.loads(decoded_data)
+
                     #raw_images.append(decoded_data)
                     #if isinstance(decoded_data, numpy.ndarray):
                        #cv.imshow("original image", decoded_data)
                     #image = raw_images.popleft()
+
                     cv.imshow("original images", decoded_data)
 
                     new_msg = True
-                    full_msg = b''
+                    full_msg = bytearray()
                     header = ''
 
                     key = cv.waitKey(1) & 0xFF
@@ -145,7 +151,7 @@ def main():
     while True:
         try:
             print("connecting to input_server")
-            input_server.connect((input_server_address, 2999))  # receving image port
+            input_server.connect((input_server_address, 6786))  # receving image port
             # output_server.connect((input_server_address, 3999))  # sending image port
         except ConnectionRefusedError:
             # Keep trying to connect to input_server

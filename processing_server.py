@@ -47,7 +47,7 @@ def receive_message():
 
             full_msg += msg
             receive_msg_size = msglen
-            print(len(msg))
+            #print(len(msg))
 
             # ensure receiving full message
             if msglen + HEADERSIZE - len(full_msg) < receive_msg_size:
@@ -55,7 +55,7 @@ def receive_message():
 
             # Process fullly received message
             if len(full_msg) - HEADERSIZE == msglen:
-                time.sleep(1)
+                #time.sleep(1)
                 receive_msg_size = HEADERSIZE
                 # check what type of message this is
                 decoded_data = pickle.loads(full_msg[HEADERSIZE:])
@@ -63,8 +63,9 @@ def receive_message():
                     # the message is an update message
                     update_order(decoded_data)
                 else:
+                    pass
                     # the message is an image
-                    raw_images.append(decoded_data)
+                    #raw_images.append(decoded_data)
                 new_msg = True
                 full_msg = b''
 
@@ -84,6 +85,25 @@ def process_images():
             raw_images.popleft()
             result = pickle.dumps(generic_result)
             output_server.sendall(f'{len(result):<{HEADERSIZE}}'.encode() + result)
+
+def program_structure():
+
+
+    # Has n + 1 processes, where n is the number of object detection models.
+
+        # Main process:
+            # Connect to input server and output server
+            # Receive message from input server
+            # Create a global result_list that is share globally among all processes.
+            # This list contains the result of the current image, and is set to empty after it is sent to output server
+            # Send the result to output server and empty the list
+
+        # Object_detection_models processes (n):
+            # Each process handles each model
+            # All processes will have to figure out a way to communicate and collectively process the image.
+            # Then the result is put in a global result_list that is shared among all processes
+            # The main process will determine when to send the result (when all processes finished its task on a particular image)
+    pass
 
 
 # socket tutorial: https://www.youtube.com/watch?v=Lbfe3-v7yE0
@@ -126,7 +146,7 @@ def main():
             break
 
     Thread(target=receive_message).start()
-    Thread(target=process_images).start()
+    #Thread(target=process_images).start()
 
 
 if __name__ == '__main__':
