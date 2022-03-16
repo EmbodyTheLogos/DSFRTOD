@@ -8,6 +8,8 @@ import lz4.frame
 import socket
 from collections import deque
 
+HEADERSIZE = 10
+
 # these variables are relating to socket
 input_server_address = '' #[ip]:[port]
 input_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # AF_INET means IPv4, SOCKET_STREAM means TCP
@@ -144,16 +146,16 @@ def connect():
             break
 
     # connecting to output_server
-    while True:
-        try:
-            print("connecting to input_server")
-            output_server_socket.connect((output_ip, output_port))
-        except ConnectionRefusedError:
-            # Keep trying to connect to input_server
-            pass
-        else:
-            print("connected to input_server")
-            break
+    # while True:
+    #     try:
+    #         print("connecting to input_server")
+    #         output_server_socket.connect((output_ip, output_port))
+    #     except ConnectionRefusedError:
+    #         # Keep trying to connect to input_server
+    #         pass
+    #     else:
+    #         print("connected to input_server")
+    #         break
 
 def program_structure():
 
@@ -186,39 +188,43 @@ def program_structure():
         pass
 
 def main():
+
+    while True:
+        try:
+            print("connecting to input_server")
+            input_server_socket.connect(("192.168.1.126", 2999))  # receving image port
+            # output_server.connect((input_server_address, 3999))  # sending image port
+        except ConnectionRefusedError:
+            # Keep trying to connect to input_server
+            pass
+        else:
+            print("connected to input_server")
+            break
+
     cap = cv2.VideoCapture(0)
+    input_server_socket.settimeout(1) #if there is nothing to receive after 1 second, timeout exception occurs
+    while True:
+        ret, frame = cap.read()
 
-    ret, frame = cap.read()
-    frame = pickle.dumps(frame)
+        if ret:
+            try:
+                message = cv2.imencode('.jpg', frame)[1].tobytes()    # this thing convert cv2 image into binary byte (similar to file.read(),
+                                                                    # which decrease about 10 times in size
+                header = f'{len(message):<{HEADERSIZE}}'.encode()
+                message = header + message
+                input_server_socket.send(message)
+            except socket.timeout:
+                print("Skip frame")
+        else:
+            cap = cv2.VideoCapture("wow.mp4")
+        # encrypt the video frame
+        #key = generate_key().encode()
+        #nonce = get_random_bytes(15)
+        #s = time.time()
+        #encrypted_data, mac = encrypt_data(frame, key)
+        #e = time.time()
+        #print("Encryption time:", e-s)
 
-    print("Original size:",sys.getsizeof(frame))
-    s = time.time()
-    compressed_frame = lz4.frame.compress(frame)
-    e = time.time()
-    print("compression time:", e-s)
-    # encrypt the video frame
-    key = generate_key().encode()
-    #nonce = get_random_bytes(15)
-    s = time.time()
-    encrypted_data, mac = encrypt_data(frame, key)
-    e = time.time()
-    print("Encryption time:", e-s)
-    print("After compress size:", sys.getsizeof(compressed_frame))
-    print("After encrypted size:", sys.getsizeof(encrypted_data))
-    s = time.time()
-    decrypted_data = decrypt_data(encrypted_data, key, mac)
-    #print("Encrypted Data:", encrypted_data)
-
-    e = time.time()
-    print("Decryption time:", e-s)
-    print("Authentication Key:", key.decode())
-
-
-    s = time.time()
-    fast_enrypted_data = fast_encryption(bytearray(decrypted_data), key)
-    e = time.time()
-    print(len(fast_enrypted_data))
-    print("Fast encryption time:", e-s)
 
 
 if __name__ == '__main__':
