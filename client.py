@@ -192,7 +192,7 @@ def main():
     while True:
         try:
             print("connecting to input_server")
-            input_server_socket.connect(("192.168.1.126", 2999))  # receving image port
+            input_server_socket.connect(("127.0.0.1", 2999))  # receving image port
             # output_server.connect((input_server_address, 3999))  # sending image port
         except ConnectionRefusedError:
             # Keep trying to connect to input_server
@@ -202,7 +202,7 @@ def main():
             break
 
     cap = cv2.VideoCapture(0)
-    input_server_socket.settimeout(1) #if there is nothing to receive after 1 second, timeout exception occurs
+    input_server_socket.settimeout(0.1) #if there is nothing to receive after 1 second, timeout exception occurs
     while True:
         ret, frame = cap.read()
 

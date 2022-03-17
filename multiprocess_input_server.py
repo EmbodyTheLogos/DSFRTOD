@@ -69,7 +69,7 @@ def coordinator(image, tasks_list, num_of_processing_server):
     global clients
     global new_client
     # this address and port is for clients to connect
-    input_server.bind(("192.168.1.126", 2999))
+    input_server.bind(("127.0.0.1", 2999))
     input_server.listen(5)
 
     Thread(target=accept_clients).start()  # start accepting clients
@@ -119,7 +119,16 @@ def handle_one_processing_server(image, tasks_list, ps_socket, process_id, num_o
                         try:
                             ps_socket.send(message)
                         except socket.timeout:
-                            print("skip a message")
+                            try:
+                                ps_socket.settimeout(3)
+                                message = "skip".encode()
+                                header = f'{len(message):<{HEADERSIZE}}'.encode()
+                                message = header + message
+                                ps_socket.send(message)
+                                ps_socket.settimeout(0.1)
+                            except socket.timeout:
+                                # TODO: disconnect the processing server after 3 seconds waiting
+                                pass
                         tasks_list[i] = True
                         client_id += 1
 
@@ -128,10 +137,10 @@ def handle_one_processing_server(image, tasks_list, ps_socket, process_id, num_o
 
 def main():
     global input_server
-    print("Input Server Address:", "192.168.1.126", 6787)
+    print("Input Server Address:", "127.0.0.1", 6787)
 
     # this address and port is for processing servers to connect.
-    input_server.bind(("192.168.1.126", 1999))
+    input_server.bind(("127.0.0.1", 1999))
     input_server.listen(5)
 
     num_of_processing_server = Value('i', 0)  # keep track of the number of processing servers
@@ -139,7 +148,7 @@ def main():
     image = Manager().list(
         [None])  # this is the global storage for images received from clients. It is shared across all processes.
 
-    tasks_list = Manager().list()  # this is use to synchronize the task for processes that handle processing servers' sockets.
+    tasks_list = Manager().list()  # used for synchronization of processes that handle processing servers' sockets.
 
     # start coordinator process.
     Process(target=coordinator, args=(image, tasks_list, num_of_processing_server)).start()

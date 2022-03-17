@@ -21,37 +21,44 @@ def receive_images():
             msg = input_server.recv(receive_msg_size)
             full_msg.extend(msg)
             if new_msg:
-                #make sure to receive full header before convert it to int (sometimes, only part of the header is received)
                 header += msg.decode()
+
+                # make sure to receive full header before convert it to int (sometimes, only part of the header is received)
                 if len(header) < HEADERSIZE:
-                    print("Error should happen here")
+                    print("header not completely received")
                     receive_msg_size = HEADERSIZE - len(header)
-                    print("Current message size:", receive_msg_size)
                 else:
                     msglen = int(header)
                     print(header)
+                    receive_msg_size = 0 # (*) this solved negative message size error in receive buffer below.
                     new_msg = False
 
             else:
                 # ensure receiving full message
-                remaining_len = msglen + HEADERSIZE - len(full_msg)
-                #print(remaining_len)
-                #print(len(full_msg))
+                remaining_len = msglen + HEADERSIZE - len(full_msg) # (*) this can cause negative message size in receive buffer error since full_msg will always be updated after every loop.
+                                                                    # We ensure full_message is not updated right after we are done with the header by setting the receive_message_size to 0
+                                                                    # See (*) above
+                print(remaining_len)
                 receive_msg_size = remaining_len
                 # Process fullly received message
                 if len(full_msg) - HEADERSIZE == msglen:
                     receive_msg_size = HEADERSIZE
-                    # check what type of message this is
-
                     decoded_data = cv.imdecode(np.frombuffer(full_msg[HEADERSIZE:], np.uint8), 1)
+
+                    # check what type of message this is
                     if type(decoded_data)is not np.ndarray:
-                        #this is an update message
                         decoded_data = full_msg[HEADERSIZE:].decode()
-                        print("update")
-                        #TODO process update data
+                        if decoded_data == "skip":
+                            # TODO: send empty annotation to output server
+                            pass
+                        else:
+                            # this is an update message
+                            # TODO: handle update
+                            pass
                     else:
-                        pass
-                        #cv.imshow("hi", decoded_data)
+                        # TODO: pass the image into YOLOv5 algorithm and get the annotated information
+                        cv.imshow("hi", decoded_data)
+                        # TODO: send the result to output server
 
                     new_msg = True
                     full_msg = bytearray()
@@ -70,7 +77,7 @@ def main():
     while True:
         try:
             print("connecting to input_server")
-            input_server.connect(("192.168.1.126", 1999))  # receving image port
+            input_server.connect(("127.0.0.1", 1999))  # receving image port
             # output_server.connect((input_server_address, 3999))  # sending image port
         except ConnectionRefusedError:
             # Keep trying to connect to input_server
