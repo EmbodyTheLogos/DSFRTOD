@@ -98,7 +98,7 @@ def coordinator(images, tasks_list, num_of_processing_servers):
                             for i in range(k, k + num_of_processing_servers.value):  # this will raise IndexOutOfBound if num_of_processing_servers is updated before the task_list
                                 tasks_list[i] = False
                         except IndexError:
-                            # the task_list is being updated due to a processing server disconnect
+                            # when the task_list is updating, we allow Index out of bound error to occur during that time
                             pass
                     else:
                         # when a client disconnected, we want to update the task_list
@@ -187,8 +187,6 @@ def handle_one_processing_server(images, tasks_list, ps_socket, process_id, num_
 
                                 # delete the cells that this processes currently occupied.
                                 for l in reversed(range(process_id, len(tasks_list), num_of_processing_servers.value)):
-                                    print("l",l)
-                                    #print(tasks_list)
                                     if l >= 0:
                                         del tasks_list[l]
                                 num_of_processing_servers.value -= 1
