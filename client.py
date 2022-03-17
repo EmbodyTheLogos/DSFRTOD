@@ -192,8 +192,8 @@ def main():
     while True:
         try:
             print("connecting to input_server")
-            input_server_socket.connect(("127.0.0.1", 2999))  # receving image port
-            # output_server.connect((input_server_address, 3999))  # sending image port
+            input_server_socket.connect(("192.168.1.126", 2999))  # receving images port
+            # output_server.connect((input_server_address, 3999))  # sending images port
         except ConnectionRefusedError:
             # Keep trying to connect to input_server
             pass
@@ -202,13 +202,13 @@ def main():
             break
 
     cap = cv2.VideoCapture(0)
-    input_server_socket.settimeout(0.1) #if there is nothing to receive after 1 second, timeout exception occurs
+    input_server_socket.settimeout(0.05) #if there is nothing to receive after 1 second, timeout exception occurs
     while True:
         ret, frame = cap.read()
 
         if ret:
             try:
-                message = cv2.imencode('.jpg', frame)[1].tobytes()    # this thing convert cv2 image into binary byte (similar to file.read(),
+                message = cv2.imencode('.jpg', frame)[1].tobytes()    # this thing convert cv2 images into binary byte (similar to file.read(),
                                                                     # which decrease about 10 times in size
                 header = f'{len(message):<{HEADERSIZE}}'.encode()
                 message = header + message

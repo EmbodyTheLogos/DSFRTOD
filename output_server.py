@@ -21,7 +21,7 @@ processing_servers = []  # list of tuples. A tuple contain the socket for a proc
 received_success = []  # keep track of whether or not we received the result from a processing input_server or not
 
 raw_images = deque([])  # contains 100 raw images received from input_server. Act like a buffer.
-fully_annotated = []  # use to determine if an image is fully annotated or not. len(fully_annotated == len(processing_servers).
+fully_annotated = []  # use to determine if an images is fully annotated or not. len(fully_annotated == len(processing_servers).
 
 
 def accept_new_connection():
@@ -80,8 +80,8 @@ def receive_raw_image():
 
                     #raw_images.append(decoded_data)
                     #if isinstance(decoded_data, numpy.ndarray):
-                       #cv.imshow("original image", decoded_data)
-                    #image = raw_images.popleft()
+                       #cv.imshow("original images", decoded_data)
+                    #images = raw_images.popleft()
 
                     cv.imshow("original images", decoded_data)
 
@@ -95,7 +95,7 @@ def receive_raw_image():
         except (ConnectionResetError, ConnectionAbortedError):
             print("Disconnected from input_server")
             break
-    cv.destroyAllWindows()  # destroys the window showing image
+    cv.destroyAllWindows()  # destroys the window showing images
 
 
 def receive_result(ps_id):
@@ -126,8 +126,8 @@ def receive_result(ps_id):
                 if len(full_msg) - HEADERSIZE == msglen:
                     receive_msg_size = HEADERSIZE
                     decoded_data = pickle.loads(full_msg[HEADERSIZE:])
-                    # image = raw_images.popleft()
-                    # cv.imshow("After processed", image)
+                    # images = raw_images.popleft()
+                    # cv.imshow("After processed", images)
 
                     new_msg = True
                     full_msg = b''
@@ -143,7 +143,7 @@ def receive_result(ps_id):
                 del processing_servers[ps_id]
                 update_order()
                 break
-    cv.destroyAllWindows()  # destroys the window showing image
+    cv.destroyAllWindows()  # destroys the window showing images
 
 
 def main():
@@ -151,8 +151,8 @@ def main():
     while True:
         try:
             print("connecting to input_server")
-            input_server.connect((input_server_address, 6786))  # receving image port
-            # output_server.connect((input_server_address, 3999))  # sending image port
+            input_server.connect((input_server_address, 6786))  # receving images port
+            # output_server.connect((input_server_address, 3999))  # sending images port
         except ConnectionRefusedError:
             # Keep trying to connect to input_server
             pass

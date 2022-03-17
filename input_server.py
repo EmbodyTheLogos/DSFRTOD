@@ -53,22 +53,22 @@ def handle_all_processing_servers():
 
             #frame = imutils.resize(frame, width=640, height=640)
 
-            #image = pyautogui.screenshot()
-            #image = cv.cvtColor(np.array(image),cv.COLOR_RGB2BGR)
-            image = pickle.dumps(frame)  # encode image using pickle
+            #images = pyautogui.screenshot()
+            #images = cv.cvtColor(np.array(images),cv.COLOR_RGB2BGR)
+            image = pickle.dumps(frame)  # encode images using pickle
             print(len(image))
-            #print(len(image))
-            #compressed_image = lz4.frame.compress(image)
+            #print(len(images))
+            #compressed_image = lz4.frame.compress(images)
             #compressed_image = lz4.frame.compress(compressed_image)
 
             image = f'{len(image):<{HEADERSIZE}}'.encode() + image
 
             #s = time.time()
-            output_server.send(image) #send image to output server
+            output_server.send(image) #send images to output server
             #e = time.time()
 
 
-            #print("Time to send an image to 1 server", e-s)
+            #print("Time to send an images to 1 server", e-s)
             #cv.imshow("original input", frame)
             for i in range(len(processing_servers)):
                 if need_to_update:

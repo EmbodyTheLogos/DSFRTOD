@@ -1,6 +1,7 @@
 import socket
-from multiprocessing import Process, Manager, Value, Queue
+from multiprocessing import Process, Manager, Value, Lock
 import time
+import sys
 from threading import Thread
 
 HEADERSIZE = 10
@@ -44,15 +45,17 @@ def receive_images(client_id):
                 # Process fullly received message
                 if len(full_msg) - HEADERSIZE == msglen:
                     e = time.time()
-                    print(e - s)
+                    #print(e - s)
                     return full_msg
 
         except (ConnectionResetError, ConnectionAbortedError):
             print("Disconnected from input_server")
+            del clients[client_id]
+            return "client disconnected"
             break
 
 
-# this method will be called from 'def coordinator' process as a thread to accept new clients.
+# this method will be called from 'coordinator' process as a thread to accept new clients.
 def accept_clients():
     global clients
     global input_server
@@ -65,100 +68,174 @@ def accept_clients():
 
 
 # this process handle communications from clients and direct them (synchronously) to all processing servers
-def coordinator(image, tasks_list, num_of_processing_server):
+def coordinator(images, tasks_list, num_of_processing_servers):
     global clients
     global new_client
     # this address and port is for clients to connect
-    input_server.bind(("127.0.0.1", 2999))
+    input_server.bind(("192.168.1.126", 2999))
     input_server.listen(5)
 
     Thread(target=accept_clients).start()  # start accepting clients
 
-    # main task: receives messages from clients and direct them (synchronously) to processing servers
+    # main task: receives images from clients and direct them (synchronously) to processing servers
     while True:
         if new_client:
-            image.append(None)
-            tasks_list.extend([True] * num_of_processing_server.value)
+            images.append(None)
+            tasks_list.extend([True] * num_of_processing_servers.value)
             new_client = False
 
         if clients:
-            for k in range(0, len(tasks_list), num_of_processing_server.value):
-                if all(tasks_list[k:k + num_of_processing_server.value]):
+            for k in range(0, len(tasks_list), num_of_processing_servers.value):
+                if all(tasks_list[k:k + num_of_processing_servers.value]):
                     try:
                         client_id = (len(tasks_list) // k) - 1
                     except ZeroDivisionError:
                         client_id = 0
                     message = receive_images(client_id)
-                    image[client_id] = message
-                    for i in range(k,
-                                   k + num_of_processing_server.value):  # this will raise IndexOutOfBound if num_of_processing_server is updated before the task_list
-                        tasks_list[i] = False
-    # TODO: handle when a client disconnect
+                    if message != "client disconnected":
+                        images[client_id] = message
+                        try:
+                            for i in range(k, k + num_of_processing_servers.value):  # this will raise IndexOutOfBound if num_of_processing_servers is updated before the task_list
+                                tasks_list[i] = False
+                        except IndexError:
+                            # the task_list is being updated due to a processing server disconnect
+                            pass
+                    else:
+                        # when a client disconnected, we want to update the task_list
+                        for i in range(num_of_processing_servers.value):
+                            tasks_list.pop()
+                        # remove a spot from images list
+                        images.pop()
 
 
-def handle_one_processing_server(image, tasks_list, ps_socket, process_id, num_of_processing_servers):
+def handle_one_processing_server(images, tasks_list, ps_socket, process_id, num_of_processing_servers, lock_update):
     global HEADERSIZE
 
-    # update the task_list since a new processing server connected
-    try:
-        num_of_clients = len(tasks_list) // num_of_processing_servers.value
-    except ZeroDivisionError:
-        num_of_clients = 0
-    tasks_list.extend([True] * num_of_clients)
-
-    # we don't want to update num_of_processing_servers until we update the tasks_list to prevent IndexOutOfBound exception in coordinator process.
-    num_of_processing_servers.value += 1
-    ps_socket.settimeout(0.1)
+    print("hi")
+    ps_socket.settimeout(10)
     while True:
         if tasks_list:
             client_id = 0
             for i in range(process_id, len(tasks_list), num_of_processing_servers.value):
-                if not tasks_list[i]:
-                    if image[client_id] is not None:
-                        message = image[client_id]
-                        try:
-                            ps_socket.send(message)
-                        except socket.timeout:
+                try:
+                    if type(tasks_list[i]) is int:
+                        # update process_id when a processing server disconnected
+                        process_id = tasks_list[i]
+                        print(process_id)
+                        tasks_list[i] = False
+                        break
+                    if not tasks_list[i]:
+                        if image[client_id] is not None:
+                            message = images[client_id]
                             try:
-                                ps_socket.settimeout(3)
-                                message = "skip".encode()
-                                header = f'{len(message):<{HEADERSIZE}}'.encode()
-                                message = header + message
                                 ps_socket.send(message)
-                                ps_socket.settimeout(0.1)
                             except socket.timeout:
-                                # TODO: disconnect the processing server after 3 seconds waiting
-                                pass
-                        tasks_list[i] = True
-                        client_id += 1
+                                try:
+                                    ps_socket.settimeout(10)
+                                    message = "skip".encode()
+                                    header = f'{len(message):<{HEADERSIZE}}'.encode()
+                                    message = header + message
+                                    ps_socket.send(message)
+                                    ps_socket.settimeout(0.1)
+                                except socket.timeout:
+                                    raise ConnectionResetError
+                                except (ConnectionResetError, ConnectionAbortedError):
+                                    print("A processing server disconnected", ps_socket)
+                                    ps_socket.close()
+                                    # ensure only one process can update at a time
+                                    lock_update.acquire() # acquire the lock for updating
 
-    # TODO: Handle when a processing server disconnect
+                                    # Update task_list
+                                    # invalidate the cells that this processes currently occupied.
+                                    for l in range(process_id, len(tasks_list), num_of_processing_servers.value):
+                                        tasks_list[l] = None
+
+                                    # inform other processes that has process_id greather than this process's id to decrease its process_id by 1
+                                    for k in range(process_id + 1, num_of_processing_servers.value):
+                                        tasks_list[k] = k - 1
+
+                                    # give the other processes sometimes to update the process_id
+                                    time.sleep(2)
+
+                                    # delete the cells that this processes currently occupied.
+                                    for l in reversed(range(process_id, len(tasks_list), num_of_processing_servers.value)):
+                                        if l >= 0:
+                                            del tasks_list[l]
+                                    num_of_processing_servers.value -= 1
+                                    lock_update.release() # release the lock
+                                    sys.exit()
+
+                            # TODO: Handle when a processing server disconnect
+                            except (ConnectionResetError, ConnectionAbortedError):
+                                print("A processing server disconnected", ps_socket)
+                                ps_socket.close()
+
+                                # ensure only one process can update at a time
+                                lock_update.acquire()  # acquire the lock for updating
+
+                                # Update task_list
+                                # invalidate the cells that this processes currently occupied.
+                                for l in range(process_id, len(tasks_list), num_of_processing_servers.value):
+                                    tasks_list[l] = None
+
+                                # inform other processes that has process_id greather than this process's id to move back an index in task_list
+                                for k in range(process_id + 1, num_of_processing_servers.value):
+                                    tasks_list[k] = k - 1
+
+                                # give the other processes sometimes to update
+                                time.sleep(2)
+
+                                # delete the cells that this processes currently occupied.
+                                for l in reversed(range(process_id, len(tasks_list), num_of_processing_servers.value)):
+                                    print("l",l)
+                                    #print(tasks_list)
+                                    if l >= 0:
+                                        del tasks_list[l]
+                                num_of_processing_servers.value -= 1
+                                lock_update.release() # release the lock
+                                sys.exit()
+
+                            tasks_list[i] = True
+                            client_id += 1
+                except IndexError:
+                    # when the task_list is updating, we allow Index out of bound error to occur during that time
+                    pass
 
 
 def main():
     global input_server
-    print("Input Server Address:", "127.0.0.1", 6787)
+    print("Input Server Address:", "192.168.1.126", 6787)
 
     # this address and port is for processing servers to connect.
-    input_server.bind(("127.0.0.1", 1999))
+    input_server.bind(("192.168.1.126", 1999))
     input_server.listen(5)
 
-    num_of_processing_server = Value('i', 0)  # keep track of the number of processing servers
+    num_of_processing_servers = Value('i', 0)  # keep track of the number of processing servers
+    lock_update = Lock() # ensure only one process can update task_list when a processing servers disconnect
 
-    image = Manager().list(
+    images = Manager().list(
         [None])  # this is the global storage for images received from clients. It is shared across all processes.
 
     tasks_list = Manager().list()  # used for synchronization of processes that handle processing servers' sockets.
 
     # start coordinator process.
-    Process(target=coordinator, args=(image, tasks_list, num_of_processing_server)).start()
+    Process(target=coordinator, args=(images, tasks_list, num_of_processing_servers)).start()
 
     # Accept new connection from processsing server.
     while True:
         ps_socket, address = input_server.accept()  # address is a tuple ("IP", port)
         print("A processing_server " + str(address) + "connected")
+        print("process id", num_of_processing_servers.value)
+        try:
+            num_of_clients = len(tasks_list) // (num_of_processing_servers.value)
+        except ZeroDivisionError:
+            num_of_clients = len(tasks_list)
+        print("task list length", len(tasks_list))
+
+        tasks_list.extend([True] * num_of_clients)
+        num_of_processing_servers.value += 1
         Process(target=handle_one_processing_server, args=(
-        image, tasks_list, ps_socket, num_of_processing_server.value - 1, num_of_processing_server)).start()
+        images, tasks_list, ps_socket, num_of_processing_servers.value-1, num_of_processing_servers, lock_update)).start()
 
 
 if __name__ == '__main__':

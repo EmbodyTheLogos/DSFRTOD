@@ -64,7 +64,7 @@ def receive_message():
                     update_order(decoded_data)
                 else:
                     pass
-                    # the message is an image
+                    # the message is an images
                     #raw_images.append(decoded_data)
                 new_msg = True
                 full_msg = b''
@@ -95,14 +95,14 @@ def program_structure():
             # Connect to input server and output server
             # Receive message from input server
             # Create a global result_list that is share globally among all processes.
-            # This list contains the result of the current image, and is set to empty after it is sent to output server
+            # This list contains the result of the current images, and is set to empty after it is sent to output server
             # Send the result to output server and empty the list
 
         # Object_detection_models processes (n):
             # Each process handles each model
-            # All processes will have to figure out a way to communicate and collectively process the image.
+            # All processes will have to figure out a way to communicate and collectively process the images.
             # Then the result is put in a global result_list that is shared among all processes
-            # The main process will determine when to send the result (when all processes finished its task on a particular image)
+            # The main process will determine when to send the result (when all processes finished its task on a particular images)
     pass
 
 
@@ -122,8 +122,8 @@ def main():
     while True:
         try:
             print("connecting to input_server")
-            input_server.connect((input_server_address, input_server_port))  # receving image port
-            # output_server.connect((input_server_address, 3999))  # sending image port
+            input_server.connect((input_server_address, input_server_port))  # receving images port
+            # output_server.connect((input_server_address, 3999))  # sending images port
 
         except ConnectionRefusedError:
             # Keep trying to connect to input_server
@@ -135,8 +135,8 @@ def main():
     while True:
         try:
             print("connecting to output_server")
-            output_server.connect((output_server_address, output_server_port))  # receving image port
-            # output_server.connect((input_server_address, 3999))  # sending image port
+            output_server.connect((output_server_address, output_server_port))  # receving images port
+            # output_server.connect((input_server_address, 3999))  # sending images port
 
         except ConnectionRefusedError:
             # Keep trying to connect to input_server
