@@ -227,5 +227,11 @@ def main():
 
 
 
+'''
+    TODO: Message format: f'{len(header):<{HEADERSIZE}}'.encode() + header + message
+    header = (len(message), ("client_ip","client_port), frame_id)
+    message = image
+'''
+
 if __name__ == '__main__':
     main()

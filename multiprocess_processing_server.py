@@ -77,7 +77,7 @@ def main():
     while True:
         try:
             print("connecting to input_server")
-            input_server.connect(("127.0.0.1", 1999))  # receving images port
+            input_server.connect(("192.168.1.126", 1999))  # receving images port
             # output_server.connect((input_server_address, 3999))  # sending images port
         except ConnectionRefusedError:
             # Keep trying to connect to input_server

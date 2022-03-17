@@ -68,7 +68,7 @@ def accept_clients():
 
 
 # this process handle communications from clients and direct them (synchronously) to all processing servers
-def coordinator(images, tasks_list, num_of_processing_servers):
+def coordinator(images, tasks_list, num_of_processing_servers, num_of_clients):
     global clients
     global new_client
     # this address and port is for clients to connect
@@ -82,30 +82,37 @@ def coordinator(images, tasks_list, num_of_processing_servers):
         if new_client:
             images.append(None)
             tasks_list.extend([True] * num_of_processing_servers.value)
+            num_of_clients.value += 1
             new_client = False
 
         if clients:
-            for k in range(0, len(tasks_list), num_of_processing_servers.value):
-                if all(tasks_list[k:k + num_of_processing_servers.value]):
-                    try:
-                        client_id = (len(tasks_list) // k) - 1
-                    except ZeroDivisionError:
-                        client_id = 0
-                    message = receive_images(client_id)
-                    if message != "client disconnected":
-                        images[client_id] = message
+            try:
+                for k in range(0, len(tasks_list), num_of_processing_servers.value):
+                    if all(tasks_list[k:k + num_of_processing_servers.value]):
                         try:
-                            for i in range(k, k + num_of_processing_servers.value):  # this will raise IndexOutOfBound if num_of_processing_servers is updated before the task_list
-                                tasks_list[i] = False
-                        except IndexError:
-                            # when the task_list is updating, we allow Index out of bound error to occur during that time
-                            pass
-                    else:
-                        # when a client disconnected, we want to update the task_list
-                        for i in range(num_of_processing_servers.value):
-                            tasks_list.pop()
-                        # remove a spot from images list
-                        images.pop()
+                            client_id = (len(tasks_list) // k) - 1
+                        except ZeroDivisionError:
+                            client_id = 0
+                        message = receive_images(client_id)
+                        if message != "client disconnected":
+                            images[client_id] = message
+                            try:
+                                for i in range(k, k + num_of_processing_servers.value):  # this will raise IndexOutOfBound if num_of_processing_servers is updated before the task_list
+                                    tasks_list[i] = False
+                            except IndexError:
+                                # when the task_list is updating, we allow Index out of bound error to occur during that time
+                                pass
+                        else:
+                            # when a client disconnected, we want to update the task_list
+                            for i in range(num_of_processing_servers.value):
+                                tasks_list.pop()
+                            # remove a spot from images list
+                            images.pop()
+            except ValueError:
+                # for k in range(0, len(tasks_list), num_of_processing_servers.value):
+                #           ValueError: range() arg 3 must not be zero
+                # This means no processing servers is connected.
+                pass
 
 
 def handle_one_processing_server(images, tasks_list, ps_socket, process_id, num_of_processing_servers, lock_update):
@@ -125,7 +132,7 @@ def handle_one_processing_server(images, tasks_list, ps_socket, process_id, num_
                         tasks_list[i] = False
                         break
                     if not tasks_list[i]:
-                        if image[client_id] is not None:
+                        if images[client_id] is not None:
                             message = images[client_id]
                             try:
                                 ps_socket.send(message)
@@ -209,6 +216,7 @@ def main():
     input_server.listen(5)
 
     num_of_processing_servers = Value('i', 0)  # keep track of the number of processing servers
+    num_of_clients = Value('i', 0) # keep track of the number of clients
     lock_update = Lock() # ensure only one process can update task_list when a processing servers disconnect
 
     images = Manager().list(
@@ -217,20 +225,17 @@ def main():
     tasks_list = Manager().list()  # used for synchronization of processes that handle processing servers' sockets.
 
     # start coordinator process.
-    Process(target=coordinator, args=(images, tasks_list, num_of_processing_servers)).start()
+    Process(target=coordinator, args=(images, tasks_list, num_of_processing_servers, num_of_clients)).start()
 
-    # Accept new connection from processsing server.
+    # Accept new connection from processing server.
     while True:
         ps_socket, address = input_server.accept()  # address is a tuple ("IP", port)
         print("A processing_server " + str(address) + "connected")
         print("process id", num_of_processing_servers.value)
-        try:
-            num_of_clients = len(tasks_list) // (num_of_processing_servers.value)
-        except ZeroDivisionError:
-            num_of_clients = len(tasks_list)
-        print("task list length", len(tasks_list))
 
-        tasks_list.extend([True] * num_of_clients)
+
+        tasks_list.extend([True] * num_of_clients.value)
+        print("task list length", len(tasks_list))
         num_of_processing_servers.value += 1
         Process(target=handle_one_processing_server, args=(
         images, tasks_list, ps_socket, num_of_processing_servers.value-1, num_of_processing_servers, lock_update)).start()
