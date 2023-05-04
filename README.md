@@ -18,8 +18,9 @@
   
 ## To understand the system
 
-Please see the "demo" folder for demos of the project.
+Demos:
+&emsp; __Add a new worker__ https://mega.nz/file/qEJy2ayT#upoEJw2RGP4bO91DUPDwrDepaxqTgw7fGQhgdp4bHdA
 
-<a href="doc:introduction" target="_blank">Introduction</a>
+
 
 Please read "paper.pdf" to understand the system better.
