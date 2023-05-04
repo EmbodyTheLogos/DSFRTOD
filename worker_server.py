@@ -42,7 +42,7 @@ def receive_images():
             msg = input_server.recv(receive_msg_size)
             if msg == b'' and receive_msg_size > 0:
                 print("Input server disconnected")
-                # TODO: attempt to reconnect to input server
+                # attempt to reconnect to input server
                 input_server.close()
                 input_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 input_server.connect((input_server_ip, 6787))
@@ -84,10 +84,9 @@ def receive_images():
                             pass
                         else:
                             # this is an update message
-                            # TODO: handle update
                             pass
                     else:
-                        # TODO: pass the images into YOLOv5 algorithm and get the annotated information
+                        # pass the images into YOLOv5 algorithm and get the annotated information
                         result = yolo.run(model, decoded_data, conf_thres = 0.50)
                         new_result = []
                         #[
