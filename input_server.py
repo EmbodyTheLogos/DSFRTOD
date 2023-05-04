@@ -141,9 +141,9 @@ def handle_one_processing_server(images, tasks_done, ps_socket, process_id, num_
                     tasks_done[process_id] = None
                     return
             tasks_done[process_id] = True
-            # TODO: when a processor disconnect
+            
 
-
+# Keep for reference
 #     while True:
 #         if tasks_done:
 #             client_id = 0
