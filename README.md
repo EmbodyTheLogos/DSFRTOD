@@ -3,7 +3,7 @@
 
 To run the system:
 
-&emsp; client: python client.py [video source] [input server ip] [output server ip]
+&emsp; __client:__ python client.py [video source] [input server ip] [output server ip]
 
 &emsp; &emsp; Example: python client.py test_video.mp4 192.168.1.2 192.168.1.3
   
