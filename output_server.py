@@ -19,7 +19,7 @@ server_for_processing_servers = socket.socket(socket.AF_INET, socket.SOCK_STREAM
 port_for_client = 6790
 port_for_processing_server = 6789
 
-host = "146.186.64.174"
+host = "0.0.0.0"
 
 HEADERSIZE = 10
 

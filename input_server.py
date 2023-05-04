@@ -9,7 +9,7 @@ HEADERSIZE = 10
 clients = []  # list of all connected clients
 input_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # "AF_INET : IPv4" and "SOCKET_STREAM : TCP"
 # host = socket.gethostbyname(socket.gethostname())
-host = "146.186.64.174"
+host = "0.0.0.0"
 new_client = False  # this tells whether a new client is connected
 
 processing_servers = []  # list of all connected processing servers. Useful for updating information
