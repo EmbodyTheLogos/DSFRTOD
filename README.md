@@ -3,7 +3,7 @@ Real-time Video Object Detection in a Distributed System with Heterogeneous Mode
 
 To run the system:
 
-&emsp; **client: **python client.py [video source] [input server ip] [output server ip]
+&emsp; client: python client.py [video source] [input server ip] [output server ip]
 
 &emsp; &emsp; Example: python client.py test_video.mp4 192.168.1.2 192.168.1.3
   
