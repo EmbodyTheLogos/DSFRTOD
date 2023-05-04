@@ -1,5 +1,5 @@
-# object_detection_DS
-Real-time Video Object Detection in a Distributed System with Heterogeneous Models
+# Real-time Video Object Detection in a Distributed System with Heterogeneous Models
+
 
 To run the system:
 
