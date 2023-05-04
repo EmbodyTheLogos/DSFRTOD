@@ -19,5 +19,6 @@
 ## To understand the system
 
 Please see the "demo" folder for demos of the project.
+<a href="doc:introduction" target="_blank">Introduction</a>
 
 Please read "paper.pdf" to understand the system better.
