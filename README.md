@@ -19,7 +19,7 @@
 ## To understand the system
 
 
-<iframe width="640" height="360" frameborder="0" src="https://mega.nz/embed/qEJy2ayT#upoEJw2RGP4bO91DUPDwrDepaxqTgw7fGQhgdp4bHdA" allowfullscreen ></iframe>
+
 
 
 Please see the "demo" folder for demos of the project.
