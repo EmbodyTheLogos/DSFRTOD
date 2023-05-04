@@ -18,10 +18,6 @@
   
 ## To understand the system
 
-
-
-
-
 Please see the "demo" folder for demos of the project.
 
 Please read "paper.pdf" to understand the system better.
