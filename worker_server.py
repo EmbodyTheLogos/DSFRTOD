@@ -20,12 +20,13 @@ if len(sys.argv) == 0:
     sys.exit()
     
 model = sys.argv[1]
+i
 
 input_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # "AF_INET : IPv4" and "SOCKET_STREAM : TCP"
 output_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-input_server_ip = "146.186.64.174"
-output_server_ip = "146.186.64.174"
+input_server_ip = sys.argv[2]
+output_server_ip = sys.argv[3]
 
 HEADERSIZE = 10
 
