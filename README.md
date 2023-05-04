@@ -16,4 +16,6 @@ To run the system:
 &emsp; &emsp; Example: python worker_server.py yolov5s.pt
   
   
-Please read "paper.pdf" to understand the system better
+Please see the "demo" folder for demos of the project.
+
+Please read "paper.pdf" to understand the system better.
