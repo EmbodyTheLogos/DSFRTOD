@@ -11,9 +11,9 @@
   
 &emsp; __output_sever:__ python output_server.py
   
-&emsp; __worker_server:__ python worker_server.py [object detection model]
+&emsp; __worker_server:__ python worker_server.py [object detection model] [input server ip] [output server ip]
 
-&emsp; &emsp; Example: python worker_server.py yolov5s.pt
+&emsp; &emsp; Example: python worker_server.py yolov5s.pt 192.168.1.2 192.168.1.3
   
   
 ## To understand the system
