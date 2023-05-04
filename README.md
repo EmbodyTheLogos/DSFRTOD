@@ -1,7 +1,9 @@
 # Real-time Video Object Detection in a Distributed System with Heterogeneous Models
 
 
-## To run the system a:
+## To run the system:
+
+&emsp; __Install requirements:__ pip install -r requirements.txt
 
 &emsp; __client:__ python client.py [video source] [input server ip] [output server ip]
 
