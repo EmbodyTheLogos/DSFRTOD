@@ -7,7 +7,7 @@ To run the system:
 
 &emsp; &emsp; Example: python client.py test_video.mp4 192.168.1.2 192.168.1.3
   
-&emsp; input server: python input_server.py
+&emsp; input_server: python input_server.py
   
 &emsp; output_sever: python output_server.py
   
