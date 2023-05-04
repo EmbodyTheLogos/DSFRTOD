@@ -109,11 +109,8 @@ def receive_images():
                             new_result.append(a_result)
                         print("old result", result)
                         print("new result", new_result)
-                        # new_result = str(new_result)
-                        # new_result = "HIHIHIHIHIHIHI"
-
-
-                        # TODO: send to output server
+                       
+                        # send to output server
                         message = pickle.dumps(new_result)
                         header = f'{len(message):<{HEADERSIZE}}'.encode()
                         print(len(header))
@@ -121,10 +118,6 @@ def receive_images():
                         output_server.send(message)
                         print("sent to output server")
                         
-
-                        # Put the image in a queue to be processed
-                        #cv.imshow("hi", decoded_data)
-                        # TODO: send the result to output server
 
                     new_msg = True
                     full_msg = bytearray()
@@ -171,9 +164,6 @@ def main():
             break
     Thread(target=receive_images).start()
 
-
-    # TODO: Make a coordinator and processes for handling the models. This is YOLOv5
-    # TODO: Make receive_images a different process instead of thread
 
 if __name__ == '__main__':
     main()
