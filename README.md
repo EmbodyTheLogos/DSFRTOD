@@ -1,5 +1,6 @@
 # Real-time Video Object Detection in a Distributed System with Heterogeneous Models
 
+## Models end with .pt extension.
 
 ## To run the system:
 
