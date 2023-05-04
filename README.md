@@ -2,6 +2,7 @@
 Real-time Video Object Detection in a Distributed System with Heterogeneous Models
 
 To run the system:
+
   client: python client.py [video source] [input server ip] [output server ip]
   
   input server: python input_server.py
