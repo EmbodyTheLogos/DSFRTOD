@@ -7,11 +7,11 @@ To run the system:
 
 &emsp; &emsp; Example: python client.py test_video.mp4 192.168.1.2 192.168.1.3
   
-&emsp; input_server: python input_server.py
+&emsp; __input_server:__ python input_server.py
   
-&emsp; output_sever: python output_server.py
+&emsp; __output_sever:__ python output_server.py
   
-&emsp; worker_server: python worker_server.py [object detection model]
+&emsp; __worker_server:__ python worker_server.py [object detection model]
 
 &emsp; &emsp; Example: python worker_server.py yolov5s.pt
   
