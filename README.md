@@ -6,7 +6,7 @@
 
 Please read "paper.pdf" to understand the system better.
 
-Demos:
+Video demos:
 
 &emsp; __Synchorinization__ https://mega.nz/file/SBx1kIxQ#mnLTucX_h3aptyB8EU3wQ9QOG5oS2-bomzvyzdJW2ec
 
